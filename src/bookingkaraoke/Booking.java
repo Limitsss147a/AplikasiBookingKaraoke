@@ -12,6 +12,7 @@ public class Booking {
     private Room room;
     private Date bookingDate;
     private int durationHours;
+    private int durasitambah;
 
     public Booking(String customerName, String customerPhone, Room room, Date bookingDate, int durationHours) {
         this.bookingId = "BK-" + String.format("%04d", idCounter.incrementAndGet());
