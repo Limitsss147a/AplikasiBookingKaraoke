@@ -3,12 +3,14 @@ package bookingkaraoke;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-
+import java.util.Arrays;
 
 public class MainFrame extends JFrame {
     private CardLayout cardLayout;
     private JPanel contentPanel;
+    private JPanel menuPanel; // Jadikan menuPanel sebagai field agar bisa di-update
     private DataManager dataManager;
+    private boolean isAdmin = false; // Variabel untuk melacak status login admin
 
     public MainFrame() {
         dataManager = new DataManager();
@@ -21,7 +23,7 @@ public class MainFrame extends JFrame {
         setLayout(new BorderLayout());
 
         // Panel Menu di sebelah kiri
-        JPanel menuPanel = createMenuPanel();
+        menuPanel = new JPanel();
         add(menuPanel, BorderLayout.WEST);
 
         // Panel Konten di sebelah kanan dengan CardLayout
@@ -30,22 +32,31 @@ public class MainFrame extends JFrame {
         contentPanel.setLayout(cardLayout);
 
         // Menambahkan semua panel/view ke contentPanel
+        setupContentPanels();
+        
+        // Membangun menu awal untuk user biasa
+        updateMenuView();
+
+        add(contentPanel, BorderLayout.CENTER);
+    }
+
+    private void setupContentPanels() {
         DaftarBookingPanel daftarBookingPanel = new DaftarBookingPanel(dataManager);
         
         contentPanel.add(createHomePanel(), "Home");
         contentPanel.add(new FormPemesananPanel(cardLayout, contentPanel, dataManager, daftarBookingPanel), "FormPemesanan");
         contentPanel.add(daftarBookingPanel, "DaftarBooking");
-        contentPanel.add(new EditBatalBookingPanel(dataManager, daftarBookingPanel), "EditBatalBooking");
+        // Ganti EditBatalBookingPanel menjadi KelolaBookingPanel
+        contentPanel.add(new KelolaBookingPanel(dataManager, daftarBookingPanel), "KelolaBooking");
         contentPanel.add(new DaftarRuanganPanel(dataManager), "DaftarRuangan");
-
-        add(contentPanel, BorderLayout.CENTER);
     }
+    
 
-    private JPanel createMenuPanel() {
-        JPanel menuPanel = new JPanel();
-        menuPanel.setBackground(new Color(45, 52, 54)); // Warna latar belakang menu (gelap)
+    private void updateMenuView() {
+        menuPanel.removeAll(); // Hapus semua komponen menu lama
+        menuPanel.setBackground(new Color(45, 52, 54));
         menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
-        menuPanel.setPreferredSize(new Dimension(220, 0)); // Lebar menu diperbesar sedikit
+        menuPanel.setPreferredSize(new Dimension(220, 0));
 
         JLabel menuTitle = new JLabel("MENU PROGRAM");
         menuTitle.setForeground(Color.WHITE);
@@ -54,29 +65,103 @@ public class MainFrame extends JFrame {
         menuTitle.setBorder(new EmptyBorder(20, 10, 20, 10));
         menuPanel.add(menuTitle);
 
-        String[] menuItems = {"Home", "Form Pemesanan", "Daftar Booking", "Edit/Batal Booking", "Daftar Ruangan"};
-        String[] cardNames = {"Home", "FormPemesanan", "DaftarBooking", "EditBatalBooking", "DaftarRuangan"};
-
-        for (int i = 0; i < menuItems.length; i++) {
-            String item = menuItems[i];
-            String cardName = cardNames[i];
-            JButton button = new JButton(item);
+        // Tentukan item menu berdasarkan status admin
+        if (isAdmin) {
+            // Menu untuk Admin
+            addMenuButton("Home", "Home");
+            addMenuButton("Form Pemesanan", "FormPemesanan");
+            addMenuButton("Daftar Booking", "DaftarBooking");
+            addMenuButton("Daftar Ruangan", "DaftarRuangan");
             
-            // --- PERBAIKAN UI ---
-            button.setBackground(new Color(220, 221, 225)); // Warna tombol terang
-            button.setForeground(Color.BLACK); // Warna font hitam agar kontras
-            button.setFont(new Font("Segoe UI", Font.BOLD, 14)); // Font dibuat bold
-            // --------------------
-
-            button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
-            button.setFocusPainted(false);
-            button.setBorder(new EmptyBorder(10, 20, 10, 20));
-            button.addActionListener(e -> cardLayout.show(contentPanel, cardName));
+            // Menu khusus Admin
+            addMenuButton("Kelola Booking", "KelolaBooking", new Color(255, 193, 7)); // Warna beda untuk menu admin
             
-            menuPanel.add(button);
-            menuPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+            // Tombol Logout
+            JButton logoutButton = new JButton("Logout");
+            configureMenuButton(logoutButton, new Color(220, 53, 69));
+            logoutButton.addActionListener(e -> handleLogout());
+            menuPanel.add(logoutButton);
+
+        } else {
+            // Menu untuk User Biasa
+            addMenuButton("Home", "Home");
+            addMenuButton("Form Pemesanan", "FormPemesanan");
+            addMenuButton("Daftar Booking", "DaftarBooking");
+            addMenuButton("Daftar Ruangan", "DaftarRuangan");
+
+            // Tombol Login Admin
+            JButton loginButton = new JButton("Login Admin");
+            configureMenuButton(loginButton, new Color(23, 162, 184));
+            loginButton.addActionListener(e -> handleAdminLogin());
+            menuPanel.add(loginButton);
         }
-        return menuPanel;
+
+        menuPanel.revalidate();
+        menuPanel.repaint();
+    }
+
+    /**
+     * Helper method untuk membuat tombol menu standar.
+     */
+    private void addMenuButton(String text, String cardName) {
+        addMenuButton(text, cardName, new Color(220, 221, 225));
+    }
+    
+    /**
+     * Helper method untuk membuat tombol menu dengan warna kustom.
+     */
+    private void addMenuButton(String text, String cardName, Color color) {
+        JButton button = new JButton(text);
+        configureMenuButton(button, color);
+        button.addActionListener(e -> cardLayout.show(contentPanel, cardName));
+        menuPanel.add(button);
+        menuPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+    }
+
+    /**
+     * Helper method untuk konfigurasi tampilan tombol.
+     */
+    private void configureMenuButton(JButton button, Color bgColor) {
+        button.setBackground(bgColor);
+        button.setForeground(Color.BLACK);
+        if (bgColor.equals(new Color(220, 53, 69)) || bgColor.equals(new Color(23, 162, 184))) {
+            button.setForeground(Color.WHITE); // Teks putih untuk tombol berwarna
+        }
+        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+        button.setFocusPainted(false);
+        button.setBorder(new EmptyBorder(10, 20, 10, 20));
+    }
+
+    /**
+     * Menangani logika saat tombol Login Admin diklik.
+     */
+    private void handleAdminLogin() {
+        JPasswordField passwordField = new JPasswordField(10);
+        int option = JOptionPane.showConfirmDialog(this, passwordField, "Masukkan Password Admin", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+        if (option == JOptionPane.OK_OPTION) {
+            char[] password = passwordField.getPassword();
+            // Password admin di-hardcode untuk contoh ini
+            if (Arrays.equals(password, "admin123".toCharArray())) {
+                isAdmin = true;
+                updateMenuView(); // Bangun ulang menu untuk admin
+                cardLayout.show(contentPanel, "Home"); // Pindah ke home setelah login
+                JOptionPane.showMessageDialog(this, "Login sebagai admin berhasil!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Password salah!", "Gagal Login", JOptionPane.ERROR_MESSAGE);
+            }
+            // Kosongkan password dari memori
+            Arrays.fill(password, '0');
+        }
+    }
+    
+ 
+    private void handleLogout() {
+        isAdmin = false;
+        updateMenuView(); // Bangun ulang menu untuk user biasa
+        cardLayout.show(contentPanel, "Home"); // Kembali ke home
+        JOptionPane.showMessageDialog(this, "Anda telah logout.", "Logout", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private JPanel createHomePanel() {

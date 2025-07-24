@@ -4,7 +4,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
-public class EditBatalBookingPanel extends JPanel {
+public class KelolaBookingPanel extends JPanel {
     private JTextField searchField, namaField, telpField, durasiField;
     private JComboBox<String> ruanganComboBox;
     private JLabel bookingIdLabel;
@@ -13,7 +13,7 @@ public class EditBatalBookingPanel extends JPanel {
     private DaftarBookingPanel daftarBookingPanel;
     private Booking currentBooking;
 
-    public EditBatalBookingPanel(DataManager dataManager, DaftarBookingPanel daftarBookingPanel) {
+    public KelolaBookingPanel(DataManager dataManager, DaftarBookingPanel daftarBookingPanel) {
         this.dataManager = dataManager;
         this.daftarBookingPanel = daftarBookingPanel;
         
@@ -21,6 +21,7 @@ public class EditBatalBookingPanel extends JPanel {
         setBorder(new EmptyBorder(20, 20, 20, 20));
         setBackground(new Color(240, 240, 240));
 
+        // Panel Pencarian
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchPanel.add(new JLabel("Masukkan Kode Booking:"));
         searchField = new JTextField(15);
@@ -29,6 +30,7 @@ public class EditBatalBookingPanel extends JPanel {
         searchPanel.add(searchButton);
         add(searchPanel, BorderLayout.NORTH);
         
+        // Panel Form Edit
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBorder(BorderFactory.createTitledBorder("Detail Booking"));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -56,6 +58,7 @@ public class EditBatalBookingPanel extends JPanel {
         
         add(formPanel, BorderLayout.CENTER);
 
+        // Panel Tombol Aksi
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         updateButton = new JButton("Update");
         updateButton.setBackground(new Color(52, 152, 219));
