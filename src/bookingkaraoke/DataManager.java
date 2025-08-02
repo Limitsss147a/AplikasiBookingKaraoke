@@ -1,77 +1,129 @@
 package bookingkaraoke;
 
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
 
-
 public class DataManager {
-    private ArrayList<Booking> bookings;
-    private ArrayList<Room> rooms;
+
+    private Connection connection;
 
     public DataManager() {
-        bookings = new ArrayList<>();
-        rooms = new ArrayList<>();
-        initializeRooms();
-        initializeDummyBookings();
+        // Mendapatkan koneksi dari kelas DatabaseConnection
+        this.connection = DatabaseConnection.getConnection();
+        // initializeRoomsFromDB(); // Anda bisa memanggil ini jika ingin memastikan ruangan ada
     }
 
-    private void initializeRooms() {
-        rooms.add(new Room("R01", "Small", 4, 50000));
-        rooms.add(new Room("R02", "Small", 4, 50000));
-        rooms.add(new Room("M01", "Medium", 8, 80000));
-        rooms.add(new Room("M02", "Medium", 8, 80000));
-        rooms.add(new Room("L01", "Large", 12, 120000));
-        rooms.add(new Room("V01", "VIP", 15, 200000));
-    }
-    
-    private void initializeDummyBookings() {
-        Booking b1 = new Booking("Andi", "081234567890", findRoomById("M01"), new Date(), 2);
-        Booking b2 = new Booking("Budi", "087712345678", findRoomById("L01"), new Date(), 3);
-        bookings.add(b1);
-        bookings.add(b2);
-    }
-
-    public void addBooking(Booking booking) {
-        bookings.add(booking);
-    }
-
-    public ArrayList<Booking> getBookings() {
-        return bookings;
-    }
-
-    public Booking findBookingById(String id) {
-        for (Booking booking : bookings) {
-            if (booking.getBookingId().equalsIgnoreCase(id)) {
-                return booking;
-            }
-        }
-        return null;
-    }
-
-    public void updateBooking(Booking updatedBooking) {
-        Booking booking = findBookingById(updatedBooking.getBookingId());
-        if (booking != null) {
-            booking.setCustomerName(updatedBooking.getCustomerName());
-            booking.setCustomerPhone(updatedBooking.getCustomerPhone());
-            booking.setRoom(updatedBooking.getRoom());
-            booking.setDurationHours(updatedBooking.getDurationHours());
-        }
-    }
-
-    public void deleteBooking(String id) {
-        bookings.removeIf(booking -> booking.getBookingId().equalsIgnoreCase(id));
-    }
-
+    // Mengambil semua data ruangan dari database
     public ArrayList<Room> getRooms() {
+        ArrayList<Room> rooms = new ArrayList<>();
+        String query = "SELECT * FROM rooms";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            while (rs.next()) {
+                rooms.add(new Room(
+                        rs.getString("roomId"),
+                        rs.getString("type"),
+                        rs.getInt("capacity"),
+                        rs.getDouble("pricePerHour")));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return rooms;
     }
-
+    
+    // Mencari ruangan berdasarkan ID dari database
     public Room findRoomById(String id) {
-        for (Room room : rooms) {
-            if (room.getRoomId().equalsIgnoreCase(id)) {
-                return room;
+        String query = "SELECT * FROM rooms WHERE roomId = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setString(1, id);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new Room(
+                            rs.getString("roomId"),
+                            rs.getString("type"),
+                            rs.getInt("capacity"),
+                            rs.getDouble("pricePerHour"));
+                }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return null;
     }
+
+    // Menambahkan booking baru ke database
+    public void addBooking(Booking booking) {
+        String query = "INSERT INTO bookings (bookingId, customerName, customerPhone, roomId, bookingDate, durationHours) VALUES (?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setString(1, booking.getBookingId());
+            pstmt.setString(2, booking.getCustomerName());
+            pstmt.setString(3, booking.getCustomerPhone());
+            pstmt.setString(4, booking.getRoom().getRoomId());
+            // Konversi java.util.Date ke java.sql.Timestamp
+            pstmt.setTimestamp(5, new java.sql.Timestamp(booking.getBookingDate().getTime()));
+            pstmt.setInt(6, booking.getDurationHours());
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Mengambil semua data booking dari database
+    public ArrayList<Booking> getBookings() {
+        ArrayList<Booking> bookings = new ArrayList<>();
+        // Query dengan JOIN untuk mendapatkan detail ruangan sekaligus
+        String query = "SELECT b.*, r.type, r.capacity, r.pricePerHour FROM bookings b JOIN rooms r ON b.roomId = r.roomId";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            while (rs.next()) {
+                Room room = new Room(
+                        rs.getString("roomId"),
+                        rs.getString("type"),
+                        rs.getInt("capacity"),
+                        rs.getDouble("pricePerHour"));
+                
+                // Buat objek booking dari hasil query
+                // Perlu constructor yang bisa menerima semua parameter ini atau setter
+                 Booking booking = new Booking(
+                    rs.getString("customerName"),
+                    rs.getString("customerPhone"),
+                    room,
+                    new Date(rs.getTimestamp("bookingDate").getTime()),
+                    rs.getInt("durationHours")
+                );
+                // Karena bookingId dibuat otomatis, kita perlu set manual dari hasil DB
+                // Anda perlu menambahkan setter untuk bookingId di kelas Booking.java
+                // booking.setBookingId(rs.getString("bookingId")); 
+                bookings.add(booking);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return bookings;
+    }
+    
+    // Fungsi lainnya (findBookingById, updateBooking, deleteBooking) juga perlu diubah
+    // untuk berinteraksi dengan database menggunakan query SQL (UPDATE, DELETE, SELECT WHERE).
+    // Contoh di bawah:
+
+    public void deleteBooking(String id) {
+        String query = "DELETE FROM bookings WHERE bookingId = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setString(1, id);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    Booking findBookingById(String bookingId) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    void updateBooking(Booking currentBooking) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
 }
