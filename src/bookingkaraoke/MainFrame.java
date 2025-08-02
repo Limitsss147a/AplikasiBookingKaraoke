@@ -78,7 +78,7 @@ public class MainFrame extends JFrame {
             
             // Tombol Logout
             JButton logoutButton = new JButton("Logout");
-            configureMenuButton(logoutButton, new Color(220, 53, 69));
+            configureMenuButton(logoutButton, new Color(220, 221, 225));
             logoutButton.addActionListener(e -> handleLogout());
             menuPanel.add(logoutButton);
 
@@ -91,7 +91,7 @@ public class MainFrame extends JFrame {
 
             // Tombol Login Admin
             JButton loginButton = new JButton("Login Admin");
-            configureMenuButton(loginButton, new Color(23, 162, 184));
+            configureMenuButton(loginButton, new Color(255, 193, 7));
             loginButton.addActionListener(e -> handleAdminLogin());
             menuPanel.add(loginButton);
         }
@@ -100,16 +100,12 @@ public class MainFrame extends JFrame {
         menuPanel.repaint();
     }
 
-    /**
-     * Helper method untuk membuat tombol menu standar.
-     */
+
     private void addMenuButton(String text, String cardName) {
         addMenuButton(text, cardName, new Color(220, 221, 225));
     }
     
-    /**
-     * Helper method untuk membuat tombol menu dengan warna kustom.
-     */
+
     private void addMenuButton(String text, String cardName, Color color) {
         JButton button = new JButton(text);
         configureMenuButton(button, color);
@@ -118,9 +114,7 @@ public class MainFrame extends JFrame {
         menuPanel.add(Box.createRigidArea(new Dimension(0, 5)));
     }
 
-    /**
-     * Helper method untuk konfigurasi tampilan tombol.
-     */
+
     private void configureMenuButton(JButton button, Color bgColor) {
         button.setBackground(bgColor);
         button.setForeground(Color.BLACK);
@@ -133,9 +127,6 @@ public class MainFrame extends JFrame {
         button.setBorder(new EmptyBorder(10, 20, 10, 20));
     }
 
-    /**
-     * Menangani logika saat tombol Login Admin diklik.
-     */
     private void handleAdminLogin() {
         JPasswordField passwordField = new JPasswordField(10);
         int option = JOptionPane.showConfirmDialog(this, passwordField, "Masukkan Password Admin", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
